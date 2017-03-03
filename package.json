@@ -1,0 +1,22 @@
+{
+  "name": "leprechaun",
+  "version": "0.0.1",
+  "description": "A cryptocurrency based on provable dictionaries.",
+  "main": "main.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matteomonti/leprechaun.git"
+  },
+  "keywords": [
+    "cryptocurrency",
+    "provable",
+    "dictionary"
+  ],
+  "author": "Matteo Monti <matteo.monti@rain.vg>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/matteomonti/leprechaun/issues"
+  },
+  "homepage": "https://github.com/matteomonti/leprechaun#readme"
+}
