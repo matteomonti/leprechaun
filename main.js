@@ -5,10 +5,15 @@ const database = require('./database/dictionary.js');
 var dbpath = path.join(__dirname, 'data', 'leprechaun.db');
 var mydb = new database(dbpath, 'provable');
 
-mydb.setup().then(function()
+mydb.setup().then(async function()
 {
-    console.log('Success');
-}).catch(function(error)
+    await mydb.set('emma', {awesome: true});
+    await mydb.set('watson', {surnameof: 'emma'});
+    console.log(await mydb.get('emma'));
+    console.log(await mydb.get('watson'));
+    await mydb.set('watson', {alsosurnameof: 'john'});
+    console.log(await mydb.get('watson'));
+}).then(function()
 {
-    console.log(error);
+    console.log('Completed');
 });
