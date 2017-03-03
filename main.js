@@ -1,3 +1,14 @@
-const sha256 = require('./crypto/sha256.js');
+const path = require('path');
 
-console.log(sha256('Emma Watson'));
+const database = require('./database/dictionary.js');
+
+var dbpath = path.join(__dirname, 'data', 'leprechaun.db');
+var mydb = new database(dbpath, 'provable');
+
+mydb.setup().then(function()
+{
+    console.log('Success');
+}).catch(function(error)
+{
+    console.log(error);
+});
