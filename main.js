@@ -51,18 +51,13 @@ var main = async function()
     {
         for(var i = 0; i < 128; i++)
         {
-            var response = await mydict.remove(i.toString());
+            var response = await mydict.get(i.toString());
 
-            if(verifier.remove(response))
+            if(verifier.get(response))
                 console.log('Verification succeeded');
             else
-            {
                 console.log('Verification failed');
-                process.exit();
-            }
         }
-
-        console.log('Removal completed');
     }
     catch(error)
     {

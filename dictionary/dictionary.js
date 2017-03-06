@@ -25,7 +25,6 @@ module.exports = function(path, table)
     self.add = async function(key, content)
     {
         key = sha256(key);
-
         var response = {payload: {key: key, content: content}, root: {}, proof: {}};
 
         var depth = 0;
@@ -108,7 +107,6 @@ module.exports = function(path, table)
     self.remove = async function(key)
     {
         key = sha256(key);
-
         var response = {key: key, root: {}, proof: {}};
 
         var depth = 0;
@@ -182,4 +180,60 @@ module.exports = function(path, table)
 
         return response;
     };
+
+    self.get = async function(key)
+    {
+        key = sha256(key);
+        var response = {proof: {}};
+
+        var depth = 0;
+        var cursor = bigint.one;
+        
+        await db.begin();
+
+        while(true)
+        {
+            var node;
+
+            if(!depth)
+            {
+                node = await db.get(cursor);
+
+                response.root = node.label;
+                response.proof[cursor.toString(16)] = node;
+            }
+            else
+            {
+                var left = await db.get(cursor.divide(2).multiply(2));
+                var right = await db.get(cursor.divide(2).multiply(2).add(1));
+                node = bit(key, depth - 1) ? right : left;
+
+                if(!node)
+                    throw "Node not found.";
+
+                if(left) response.proof[cursor.divide(2).multiply(2).toString(16)] = left;
+                if(right) response.proof[cursor.divide(2).multiply(2).add(1).toString(16)] = right;
+            }
+
+            if('key' in node)
+            {
+                if(node.key != key)
+                    throw "Node not found.";
+                else
+                {
+                    response.payload = node;
+                    break;
+                }
+            }
+            else
+            {
+                cursor = cursor.multiply(2).add(bit(key, depth));
+                depth++;
+            }
+        }
+
+        await db.commit();
+
+        return response;
+    }
 };

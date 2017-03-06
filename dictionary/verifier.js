@@ -133,5 +133,49 @@ module.exports = {
             return false;
 
         return true;
+    },
+    get: function(response)
+    {
+        var depth = 0;
+        var cursor = bigint.one;
+
+        while(true)
+        {
+            var node = response.proof[cursor.toString(16)];
+
+            if(!depth)
+            {
+                if(node.label != response.root)
+                    return false;
+            }
+            else
+            {
+                var left = response.proof[cursor.divide(2).multiply(2).toString(16)] || {label: null}
+                var right = response.proof[cursor.divide(2).multiply(2).add(1).toString(16)] || {label: null};
+                var parent = response.proof[cursor.divide(2).toString(16)];
+
+                if(parent.label != sha256({left: left.label, right: right.label}))
+                    return false;
+            }
+
+            if('key' in node)
+            {
+                if(node.label != sha256({key: node.key, content: node.content}))
+                    return false;
+
+                break;
+            }
+
+            cursor = cursor.multiply(2).add(bit(response.payload.key, depth));
+            depth++;
+        }
+
+        if(response.proof[cursor.toString(16)].label != response.payload.label)
+            return false;
+
+        if(response.payload.label != sha256({key: response.payload.key, content: response.payload.content}))
+            return false;
+
+        return true;
     }
 }
