@@ -51,9 +51,9 @@ var main = async function()
     {
         for(var i = 0; i < 128; i++)
         {
-            var response = await mydict.get(i.toString());
+            var response = await mydict.update(i.toString(), {anotherrand: makeid()});
 
-            if(verifier.get(response))
+            if(verifier.update(response))
                 console.log('Verification succeeded');
             else
                 console.log('Verification failed');

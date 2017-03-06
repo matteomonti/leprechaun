@@ -177,5 +177,63 @@ module.exports = {
             return false;
 
         return true;
+    },
+    update: function(response)
+    {
+        var depth = 0;
+        var cursor = bigint.one;
+
+        response.payload.label = sha256({key: response.payload.key, content: response.payload.content});
+
+        while(true)
+        {
+            var node = response.proof[cursor.toString(16)];
+
+            if(!depth)
+            {
+                if(node.label != response.root.before)
+                    return false;
+            }
+            else
+            {
+                var left = response.proof[cursor.divide(2).multiply(2).toString(16)] || {label: null}
+                var right = response.proof[cursor.divide(2).multiply(2).add(1).toString(16)] || {label: null};
+                var parent = response.proof[cursor.divide(2).toString(16)];
+
+                if(parent.label != sha256({left: left.label, right: right.label}))
+                    return false;
+            }
+
+            if('key' in node)
+            {
+                if(node.label != sha256({key: node.key, content: node.content}))
+                    return false;
+
+                if(node.key != response.payload.key)
+                    return false;
+
+                response.proof[cursor.toString(16)] = response.payload;
+                cursor = cursor.divide(2);
+                break;
+            }
+
+            cursor = cursor.multiply(2).add(bit(response.payload.key, depth));
+            depth++;
+        }
+
+        while(!cursor.equals(0))
+        {
+            var node = response.proof[cursor.toString(16)];
+            var left = response.proof[cursor.multiply(2).toString(16)] || {label: null};
+            var right = response.proof[cursor.multiply(2).add(1).toString(16)] || {label: null};
+
+            node.label = sha256({left: left.label, right: right.label});
+            cursor = cursor.divide(2);
+        }
+
+        if(response.proof[bigint.one.toString(16)].label != response.root.after)
+            return false;
+
+        return true;
     }
 }
