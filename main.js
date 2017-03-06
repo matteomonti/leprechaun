@@ -1,10 +1,11 @@
 const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
 
 const dictionary = require('./dictionary/dictionary.js');
 const verifier = require('./dictionary/verifier.js');
 
 var dbpath = path.join(__dirname, 'data', 'leprechaun.db');
-var mydict = new dictionary(dbpath, 'provable');
+var mydict = new dictionary(new sqlite3.Database(dbpath), 'provable');
 
 function makeid()
 {

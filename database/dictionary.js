@@ -1,6 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
-
-module.exports = function(path, table)
+module.exports = function(database, table)
 {
     // Self
 
@@ -8,7 +6,6 @@ module.exports = function(path, table)
 
     // Members
 
-    var database = new sqlite3.Database(path);
     var nesting = 0;
 
     var queries = null;
