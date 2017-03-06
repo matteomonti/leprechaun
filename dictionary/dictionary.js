@@ -32,6 +32,8 @@ module.exports = function(path, table)
         var cursor = bigint.one;
         var collision = false;
 
+        db.begin();
+
         while(true)
         {
             var node;
@@ -60,6 +62,9 @@ module.exports = function(path, table)
 
             if('key' in node)
             {
+                if(node.key == key)
+                    throw "Key collision.";
+
                 collision = true;
 
                 await db.set(cursor, {label: null});
@@ -97,6 +102,13 @@ module.exports = function(path, table)
             cursor = cursor.divide(2);
         }
 
+        db.commit();
+
         return response;
+    };
+
+    self.remove = async function(key)
+    {
+
     };
 };
