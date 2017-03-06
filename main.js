@@ -42,6 +42,9 @@ var main = async function()
     {
         await myserver.setup();
         console.log('Setup completed');
+
+        await myserver.play();
+        console.log('Completed');
     }
     catch(error)
     {

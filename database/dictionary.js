@@ -12,8 +12,10 @@ module.exports = function(database, table)
 
     self.setup = async function()
     {
+        await database.begin();
         await database.prun('drop table if exists ' + table + ';');
         await database.prun('create table ' + table + '(id char(64) primary key, payload text);');
+        await database.commit();
     };
 
     self.get = function(id)
