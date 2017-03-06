@@ -17,6 +17,14 @@ function makeid()
     return text;
 }
 
+function sleep(milliseconds)
+{
+    return new Promise(function(resolve)
+    {
+        setTimeout(resolve, milliseconds);
+    });
+}
+
 var log = {
     log: console.log,
     enable: function()
@@ -34,22 +42,30 @@ var main = async function()
     await mydict.setup();
     console.log('Setup completed');
 
+    await sleep(30000);
+
     for(var i = 0; i < 128; i++)
         await mydict.add(i.toString(), {random: makeid()});
 
+    console.log('Insertion completed');
+    await sleep(30000);
+
     try
     {
-        var response = await mydict.add('emma', {awesome: true});
-
-        console.log(response);
-
-        if(verifier.add(response))
-            console.log('Verification succeeded');
-        else
+        for(var i = 0; i < 128; i++)
         {
-            console.log('Verification failed');
-            process.exit();
+            var response = await mydict.remove(i.toString());
+
+            if(verifier.remove(response))
+                console.log('Verification succeeded');
+            else
+            {
+                console.log('Verification failed');
+                process.exit();
+            }
         }
+
+        console.log('Removal completed');
     }
     catch(error)
     {

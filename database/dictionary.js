@@ -11,13 +11,7 @@ module.exports = function(path, table)
     var database = new sqlite3.Database(path);
     var nesting = 0;
 
-    var queries = {
-        begin: database.prepare('begin;'),
-        commit: database.prepare('commit;'),
-        get: database.prepare('select payload from ' + table + ' where id = ?;'),
-        insert: database.prepare('insert into ' + table + '(id, payload) values(?, ?);'),
-        delete: database.prepare('delete from ' + table + ' where id = ?;')
-    };
+    var queries = null;
 
     // Methods
 
@@ -29,6 +23,8 @@ module.exports = function(path, table)
 
     self.begin = function()
     {
+        prepare();
+
         return new Promise(function(resolve, reject)
         {
             nesting++;
@@ -48,6 +44,8 @@ module.exports = function(path, table)
 
     self.commit = function()
     {
+        prepare();
+
         return new Promise(function(resolve, reject)
         {
             nesting--;
@@ -67,6 +65,8 @@ module.exports = function(path, table)
 
     self.get = function(id)
     {
+        prepare();
+
         id = id.toString(16);
         return new Promise(function(resolve, reject)
         {
@@ -84,6 +84,8 @@ module.exports = function(path, table)
 
     self.set = function(id, payload)
     {
+        prepare();
+
         id = id.toString(16);
         return new Promise(function(resolve, reject)
         {
@@ -106,7 +108,36 @@ module.exports = function(path, table)
         });
     };
 
+    self.remove = function(id)
+    {
+        prepare();
+
+        id = id.toString(16);
+        return new Promise(function(resolve, reject)
+        {
+            queries.delete.run(id, function(error)
+            {
+                if(error)
+                    reject(error);
+                else
+                    resolve();
+            });
+        });
+    };
+
     // Private Methods
+
+    var prepare = function()
+    {
+        if(!queries)
+            queries = {
+                begin: database.prepare('begin;'),
+                commit: database.prepare('commit;'),
+                get: database.prepare('select payload from ' + table + ' where id = ?;'),
+                insert: database.prepare('insert into ' + table + '(id, payload) values(?, ?);'),
+                delete: database.prepare('delete from ' + table + ' where id = ?;')
+            }
+    };
 
     var run = function(query)
     {
