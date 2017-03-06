@@ -22,20 +22,8 @@ module.exports = {
 
             if(depth > 0 && !collision)
             {
-                var left;
-                var right;
-
-                if(bit(response.payload.key, depth - 1))
-                {
-                    left = response.proof[cursor.subtract(1).toString(16)] || {label: null};
-                    right = node;
-                }
-                else
-                {
-                    left = node;
-                    right = response.proof[cursor.add(1).toString(16)] || {label: null};
-                }
-
+                var left = response.proof[cursor.divide(2).multiply(2).toString(16)] || {label: null};
+                var right = response.proof[cursor.divide(2).multiply(2).add(1).toString(16)] || {label: null};
                 var parent = response.proof[cursor.divide(2).toString(16)];
 
                 if(parent.label != sha256({left: left.label, right: right.label}))
@@ -102,20 +90,8 @@ module.exports = {
             }
             else
             {
-                var left;
-                var right;
-
-                if(bit(response.key, depth - 1))
-                {
-                    left = response.proof[cursor.subtract(1).toString(16)] || {label: null};
-                    right = node;
-                }
-                else
-                {
-                    left = node;
-                    right = response.proof[cursor.add(1).toString(16)] || {label: null};
-                }
-
+                var left = response.proof[cursor.divide(2).multiply(2).toString(16)] || {label: null}
+                var right = response.proof[cursor.divide(2).multiply(2).add(1).toString(16)] || {label: null};
                 var parent = response.proof[cursor.divide(2).toString(16)];
 
                 if(parent.label != sha256({left: left.label, right: right.label}))

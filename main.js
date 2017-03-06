@@ -42,13 +42,10 @@ var main = async function()
     await mydict.setup();
     console.log('Setup completed');
 
-    await sleep(30000);
-
     for(var i = 0; i < 128; i++)
         await mydict.add(i.toString(), {random: makeid()});
 
     console.log('Insertion completed');
-    await sleep(30000);
 
     try
     {
