@@ -35,6 +35,10 @@ module.exports = {
                 if(!collision)
                 {
                     collision = true;
+
+                    if(node.key == response.payload.key)
+                        return false;
+
                     if(node.label != sha256({key: node.key, content: node.content}))
                         return false;
                 }

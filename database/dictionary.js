@@ -8,6 +8,11 @@ module.exports = function(database, table)
 
     var queries = null;
 
+    // Forwards
+
+    self.begin = database.begin;
+    self.commit = database.commit;
+
     // Methods
 
     self.setup = async function()
