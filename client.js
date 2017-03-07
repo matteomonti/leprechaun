@@ -1,14 +1,16 @@
-/*const ursa = require('ursa');
-var mykey = ursa.generatePrivateKey();
+const client = require('./client/client.js');
 
-console.log(mykey.toPublicPem().toString());
-console.log(mykey.toPrivatePem().toString());
-*/
+var main = async function()
+{
+    try
+    {
+        await client.signup('rasmussen', 'mysolidpass');
+        console.log('Signup successful.');
+    }
+    catch(error)
+    {
+        console.log('Error:', error);
+    }
+};
 
-const aes256 = require('./crypto/aes256.js');
-
-var my_cipher = new aes256('Emma Watson is the best!');
-var secret = my_cipher.encrypt({awesome: true});
-console.log(secret);
-
-console.log(my_cipher.decrypt(secret));
+main();

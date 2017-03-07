@@ -40,7 +40,7 @@ module.exports = function(path, port)
             var response = await accounts.add('users/' + user, {public: public, balance: bigint.zero.toString()});
             await tables.keychain.add(user, keychain);
 
-            var update = {action: 'user.signup', log: response};
+            var update = {command: {domain: 'user', command: 'signup'}, log: response};
 
             var version = await tables.version.get();
             await tables.update.add(version, update);
@@ -51,6 +51,18 @@ module.exports = function(path, port)
             dispatch();
 
             return true;
+        },
+        signin: async function(user, hash)
+        {
+            var keychain = await tables.keychain.get(user);
+
+            if(!keychian)
+                return null;
+
+            if(keychain.hash != hash)
+                return null;
+
+            return keychain;
         }
     };
 
@@ -70,7 +82,6 @@ module.exports = function(path, port)
         {
             try
             {
-                console.log('Destroying connection.');
                 connection.destroy();
             }
             catch(error)
@@ -91,29 +102,73 @@ module.exports = function(path, port)
                 user: {
                     signup: {
                         user: joi.string().alphanum().min(3).max(30).required(),
-
+                        public: joi.string().min(400).max(500).required(),
+                        keychain: joi.object().keys({
+                            hash: joi.string().length(64).hex().required(),
+                            private: joi.object().keys({
+                                secret: joi.string().min(3300).max(3500).hex().required(),
+                                iv: joi.string().length(24).hex().required(),
+                                tag: joi.string().length(32).hex().required()
+                            })
+                        })
+                    },
+                    signin: {
+                        user: joi.string().alphanum().min(3).max(30).required(),
+                        hash: joi.string().length(64).hex().required()
                     }
                 }
             };
 
             var handlers = {
                 user: {
-                    signup: function(message)
+                    signup: async function(payload)
                     {
-                        console.log('Received signup request!');
+                        try
+                        {
+                            var success = await self.user.signup(payload.user, payload.public, payload.keychain);
+
+                            if(success)
+                                connection.sendMessage({status: 'success'});
+                            else
+                                connection.sendMessage({error: 'username-taken'});
+                        }
+                        catch(error)
+                        {
+                            connection.sendMessage({error: 'unknown-error'});
+                        }
+                    },
+                    signin: async function(paylaod)
+                    {
+                        try
+                        {
+                            var keychain = await self.user.signin(payload.user, payload.hash);
+
+                            if(keychain)
+                                connection.sendMessage({status: 'success', keychain: keychain});
+                            else
+                                connection.sendMessage({error: 'signin-failed'});
+                        }
+                        catch(error)
+                        {
+                            connection.sendMessage({error: 'unknown-error'});
+                        }
                     }
                 }
             };
 
-            if(!('command' in message) || !('domain' in message.command) || !('command' in message.command) || !(message.command.domain in handlers) || !(message.command.command in handlers[message.command.domain]) || !('payload' in message))
+            if(!('payload' in message) || !('command' in message) || !('domain' in message.command) || !('command' in message.command) || !(message.command.domain in handlers) || !(message.command.command in handlers[message.command.domain]) || !('payload' in message))
             {
                 connection.sendMessage({error: 'command-unknown'});
                 return;
             }
 
-            handlers[message.command.domain][message.command.command](message.payload);
+            var validation = joi.validate(message.payload, schemas[message.command.domain][message.command.command]);
+            if(!(validation.error))
+                handlers[message.command.domain][message.command.command](message.payload);
+            else
+                connection.sendMessage({error: 'payload-malformed'});
         });
     });
 
-    // server.listen(port);
+    server.listen(port);
 };
