@@ -56,7 +56,7 @@ module.exports = function(path, port)
         {
             var keychain = await tables.keychain.get(user);
 
-            if(!keychian)
+            if(!keychain)
                 return null;
 
             if(keychain.hash != hash)
@@ -137,7 +137,7 @@ module.exports = function(path, port)
                             connection.sendMessage({error: 'unknown-error'});
                         }
                     },
-                    signin: async function(paylaod)
+                    signin: async function(payload)
                     {
                         try
                         {

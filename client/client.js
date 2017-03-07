@@ -35,32 +35,21 @@ module.exports = {
     },
     signin: async function(user, password)
     {
-        return new Promise(function(resolve, reject)
+        return transaction(endpoint, async function(connection)
         {
             var cipher = new aes256(password);
-            var request = {command: {domain: 'user', command: 'signup'}, payload: {user: user, hash: cipher.hash()}};
+            var request = {command: {domain: 'user', command: 'signin'}, payload: {user: user, hash: cipher.hash()}};
 
-            var connection = new jsocket(new net.Socket());
-            connection.connect(endpoint.port, endpoint.host);
-            onanything(connection, reject);
+            connection.send(request);
+            var response = await connection.receive();
 
-            connection.on('connect', function()
-            {
-                connection.sendMessage(request);
-                connection.on('message', function(message)
-                {
-                    connection.destroy();
+            if('error' in response)
+                throw response.error;
 
-                    if('error' in message && !rejected)
-                    {
-                        rejected = true;
-                        reject(message.error);
-                    }
-
-                    if('status' in message && message.status == 'success')
-                        resolve(cipher.decrypt(message.keychain.private));
-                });
-            });
+            if('status' in response && response.status == 'success')
+                return cipher.decrypt(response.keychain.private)
+            else
+                throw 'Unknown error';
         });
     }
 };

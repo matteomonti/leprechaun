@@ -6,6 +6,9 @@ var main = async function()
     {
         await client.signup('monti', 'mysolidpass');
         console.log('Signup successful.');
+
+        var keychain = await client.signin('monti', 'mysolidpass');
+        console.log(keychain);
     }
     catch(error)
     {
