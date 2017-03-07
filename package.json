@@ -21,6 +21,8 @@
   "homepage": "https://github.com/matteomonti/leprechaun#readme",
   "dependencies": {
     "big-integer": "^1.6.17",
+    "joi": "^10.2.2",
+    "json-socket": "^0.2.1",
     "node-object-hash": "^1.2.0",
     "sqlite3": "^3.1.8"
   }
