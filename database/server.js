@@ -21,7 +21,7 @@ module.exports = function(database)
         await database.prun('drop table if exists updates;');
         await database.prun('create table updates(version char(64) primary key, payload text);');
         await database.prun('drop table if exists keychain;');
-        await database.prun('create table keychain(user char(64) primary key, private text, hmac text, hash text);');
+        await database.prun('create table keychain(user char(64) primary key, private text, iv text, tag text, hash text);');
         await database.commit();
     }
 
@@ -109,7 +109,7 @@ module.exports = function(database)
                     if(error)
                         reject(error);
                     else if(row)
-                        resolve(row);
+                        resolve({private: {secret: row.private, iv: row.iv, tag: row.tag}, hash: row.hash});
                     else
                         resolve(null);
                 });
@@ -120,7 +120,7 @@ module.exports = function(database)
             prepare();
             return new Promise(function(resolve, reject)
             {
-                queries.keychain.add.run(user, keychain.private, keychain.hmac, keychain.hash, function(error)
+                queries.keychain.add.run(user, keychain.private.secret, keychain.private.iv, keychain.private.tag, keychain.hash, function(error)
                 {
                     if(error)
                         reject(error);
@@ -163,8 +163,8 @@ module.exports = function(database)
                 },
                 keychain:
                 {
-                    get: database.prepare('select private, hmac, hash from keychain where user = ?;'),
-                    add: database.prepare('insert into keychain values(?, ?, ?, ?);'),
+                    get: database.prepare('select private, iv, tag, hash from keychain where user = ?;'),
+                    add: database.prepare('insert into keychain values(?, ?, ?, ?, ?);'),
                     remove: database.prepare('delete from keychain where user = ?;')
                 }
             }

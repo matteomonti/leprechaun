@@ -24,6 +24,7 @@
     "joi": "^10.2.2",
     "json-socket": "^0.2.1",
     "node-object-hash": "^1.2.0",
-    "sqlite3": "^3.1.8"
+    "sqlite3": "^3.1.8",
+    "ursa": "^0.9.4"
   }
 }

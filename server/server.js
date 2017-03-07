@@ -91,9 +91,9 @@ module.exports = function(path, port)
                 user: {
                     signup: {
                         user: joi.string().alphanum().min(3).max(30).required(),
-                        
+
                     }
-                };
+                }
             };
 
             var handlers = {
@@ -115,5 +115,5 @@ module.exports = function(path, port)
         });
     });
 
-    server.listen(port);
+    // server.listen(port);
 };

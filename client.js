@@ -1,9 +1,14 @@
-var aes = require('./crypto/aes.js');
+/*const ursa = require('ursa');
+var mykey = ursa.generatePrivateKey();
 
-var key = '12345678901234567890123456789045';
-var iv = '123456789012345678901234';
+console.log(mykey.toPublicPem().toString());
+console.log(mykey.toPrivatePem().toString());
+*/
 
-var cryptoso = aes.encrypt({awesome: true}, key, iv);
-var decryptoso = aes.decrypt(cryptoso.message, key, iv, cryptoso.hmac);
+const aes256 = require('./crypto/aes256.js');
 
-console.log(decryptoso);
+var my_cipher = new aes256('Emma Watson is the best!');
+var secret = my_cipher.encrypt({awesome: true});
+console.log(secret);
+
+console.log(my_cipher.decrypt(secret));
