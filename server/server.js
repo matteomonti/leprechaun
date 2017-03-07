@@ -163,6 +163,7 @@ module.exports = function(path, port)
             }
 
             var validation = joi.validate(message.payload, schemas[message.command.domain][message.command.command]);
+
             if(!(validation.error))
                 handlers[message.command.domain][message.command.command](message.payload);
             else
