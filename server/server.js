@@ -48,7 +48,7 @@ module.exports = function(path, port)
 
             await db.commit();
 
-            dispatch();
+            updates.dispatch();
 
             return true;
         },
@@ -68,8 +68,43 @@ module.exports = function(path, port)
 
     // Private methods
 
-    var dispatch = function()
-    {
+    var updates = {
+        cursor: 0,
+        subscribers: {},
+        dispatch: async function(version, id)
+        {
+            if(typeof(version) == 'undefined' || typeof(version) == 'number')
+            {
+                updates.dispatch(await tables.version.get(), version);
+                return;
+            }
+
+            if(typeof(id) != 'undefined')
+            {
+                (async function()
+                {
+                    var subscriber = updates.subscribers[id];
+
+                    while(subscriber.updates.version.lt(version))
+                    {
+                        try
+                        {
+                            var update = await tables.update.get(subscriber.updates.version);
+                            subscriber.sendMessage({version: subscriber.updates.version.toString(), update: update});
+                            subscriber.updates.version = subscriber.updates.version.add(1);
+                        }
+                        catch(error)
+                        {
+                        }
+                    }
+                })();
+            }
+            else
+            {
+                for(var id in updates.subsribers)
+                    updates.dispatch(version, id);
+            }
+        }
     };
 
     // Server
@@ -82,6 +117,9 @@ module.exports = function(path, port)
         {
             try
             {
+                if('updates' in connection)
+                    delete updates.subscibers[connection.updates.id];
+
                 connection.destroy();
             }
             catch(error)
@@ -116,6 +154,13 @@ module.exports = function(path, port)
                         user: joi.string().alphanum().min(3).max(30).required(),
                         hash: joi.string().length(64).hex().required()
                     }
+                },
+                updates: {
+                    stream: {
+                        user: joi.string().alphanum().min(3).max(30).required(),
+                        hash: joi.string().length(64).hex().required(),
+                        version: joi.string().regex(/^\d{1,15}$/)
+                    }
                 }
             };
 
@@ -145,6 +190,32 @@ module.exports = function(path, port)
 
                             if(keychain)
                                 connection.sendMessage({status: 'success', keychain: keychain});
+                            else
+                                connection.sendMessage({error: 'signin-failed'});
+                        }
+                        catch(error)
+                        {
+                            connection.sendMessage({error: 'unknown-error'});
+                        }
+                    }
+                },
+                updates: {
+                    stream: async function(payload)
+                    {
+                        try
+                        {
+                            var keychain = await self.user.signin(payload.user, payload.hash);
+
+                            if(keychain)
+                            {
+                                connection.sendMessage({status: 'success'});
+
+                                connection.updates = {id: updates.cursor, version: bigint(payload.version)};
+                                updates.subscribers[connection.updates.id] = connection;
+                                updates.dispatch(connection.updates.id);
+
+                                updates.cursor++;
+                            }
                             else
                                 connection.sendMessage({error: 'signin-failed'});
                         }

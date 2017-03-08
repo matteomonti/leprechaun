@@ -51,5 +51,21 @@ module.exports = {
             else
                 throw 'Unknown error';
         });
+    },
+    listen: async function(user, password)
+    {
+        return transaction(endpoint, async function(connection)
+        {
+            var cipher = new aes256(password);
+            var request = {command: {domain: 'updates', command: 'stream'}, payload: {user: user, hash: cipher.hash(), version: '0'}};
+
+            connection.send(request);
+
+            while(true)
+            {
+                var response = await connection.receive();
+                console.log(response);
+            }
+        });
     }
 };
