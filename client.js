@@ -34,7 +34,7 @@ var main = async function()
 
         while(true)
         {
-            await sleep(10000);
+            await sleep(100);
             await client.signup(makeid(), makeid(), {path: path.resolve(__dirname, 'data', 'fake.db')});
         }
     }

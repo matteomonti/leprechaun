@@ -40,7 +40,10 @@ module.exports = function(path, port)
 
             var response = await accounts.add('users/' + user, {public: public, balance: bigint.zero.toString()});
             if(!verifier.add(response))
-                console.log('MA CHE CAZZO SUCCEDE??');
+            {
+                console.log('Something went awfully wrong.');
+                process.exit();
+            }
             else
                 console.log('Successfully added item to dictionary.');
 
