@@ -14,7 +14,7 @@ module.exports = function(endpoint, body)
         var rejected = false;
         var success = false;
 
-        var wipe = function()
+        var wipe = function(more)
         {
             try
             {
@@ -28,7 +28,7 @@ module.exports = function(endpoint, body)
                     return;
 
                 if(!rejected)
-                    reject(error);
+                    reject({error: error, more: more});
 
                 rejected = true;
             }

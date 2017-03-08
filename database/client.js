@@ -13,6 +13,11 @@ module.exports = function(path)
     var db = database.open(path);
     var queries = null;
 
+    // Forwards
+
+    self.begin = db.begin;
+    self.commit = db.commit;
+
     // Methods
 
     self.setup = async function()
@@ -21,6 +26,8 @@ module.exports = function(path)
         await db.prun('drop table if exists globals;');
         await db.prun('create table globals(user text, password text, public text, private text, root text, version text);');
         await db.prun('insert into globals values(\'\', \'\', \'\', \'\', \'\', \'0\')');
+        await db.prun('drop table if exists proof;');
+        await db.prun('create table proof(id char(64) primary key, payload text);');
         await db.commit();
     };
 
@@ -228,6 +235,74 @@ module.exports = function(path)
         }
     };
 
+    self.proof = {
+        get: function(id)
+        {
+            if(typeof(id) != 'string')
+                id = id.toString(16);
+
+            prepare();
+
+            return new Promise(function(resolve, reject)
+            {
+                queries.proof.get.get(id, function(error, row)
+                {
+                    if(error)
+                        reject(error);
+                    else if(!row)
+                        resolve(null);
+                    else
+                        resolve(JSON.parse(row.payload));
+                });
+            });
+        },
+        set: function(id, payload)
+        {
+            if(typeof(id) != 'string')
+                id = id.toString(16);
+
+            if(typeof(payload) != 'string')
+                payload = JSON.stringify(payload);
+
+            prepare();
+
+            return new Promise(function(resolve, reject)
+            {
+                queries.proof.remove.run(id, function(error)
+                {
+                    if(error)
+                        reject(error);
+                    else
+                        queries.proof.add.run(id, payload, function(error)
+                        {
+                            if(error)
+                                reject(error);
+                            else
+                                resolve();
+                        });
+                });
+            });
+        },
+        remove: function(id)
+        {
+            if(typeof(id) != 'string')
+                id = id.toString(16);
+
+            prepare();
+
+            return new Promise(function(resolve, reject)
+            {
+                queries.proof.remove.run(id, function(error)
+                {
+                    if(error)
+                        reject(error);
+                    else
+                        resolve();
+                });
+            });
+        }
+    };
+
     // Private methods
 
     var prepare = function()
@@ -263,6 +338,12 @@ module.exports = function(path)
                 {
                     get: db.prepare('select version from globals;'),
                     set: db.prepare('update globals set version = ?;')
+                },
+                proof:
+                {
+                    get: db.prepare('select payload from proof where id = ?;'),
+                    add: db.prepare('insert into proof values(?, ?);'),
+                    remove: db.prepare('delete from proof where id = ?;')
                 }
             };
     };

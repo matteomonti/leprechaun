@@ -6,6 +6,7 @@ const joi = require('joi');
 const database = require('../database/database.js');
 const server_database = require('../database/server.js');
 const dictionary = require('../dictionary/dictionary.js');
+const verifier = require('../dictionary/verifier.js');
 
 module.exports = function(path, port)
 {
@@ -35,10 +36,16 @@ module.exports = function(path, port)
             await db.begin();
 
             if(await tables.keychain.get(user))
-                return false;
+                return null;
 
             var response = await accounts.add('users/' + user, {public: public, balance: bigint.zero.toString()});
+            if(!verifier.add(response))
+                console.log('MA CHE CAZZO SUCCEDE??');
+            else
+                console.log('Successfully added item to dictionary.');
+
             await tables.keychain.add(user, keychain);
+            var account = await accounts.get('users/' + user);
 
             var update = {command: {domain: 'user', command: 'signup'}, log: response};
 
@@ -50,11 +57,12 @@ module.exports = function(path, port)
 
             updates.dispatch();
 
-            return true;
+            return account;
         },
         signin: async function(user, hash)
         {
             var keychain = await tables.keychain.get(user);
+            var account = await accounts.get('users/' + user);
 
             if(!keychain)
                 return null;
@@ -62,7 +70,7 @@ module.exports = function(path, port)
             if(keychain.hash != hash)
                 return null;
 
-            return keychain;
+            return {keychain: keychain, account: account};
         }
     };
 
@@ -171,10 +179,10 @@ module.exports = function(path, port)
                     {
                         try
                         {
-                            var success = await self.user.signup(payload.user, payload.public, payload.keychain);
+                            var account = await self.user.signup(payload.user, payload.public, payload.keychain);
 
-                            if(success)
-                                connection.sendMessage({status: 'success'});
+                            if(account)
+                                connection.sendMessage({status: 'success', account: account});
                             else
                                 connection.sendMessage({error: 'username-taken'});
                         }
@@ -187,10 +195,10 @@ module.exports = function(path, port)
                     {
                         try
                         {
-                            var keychain = await self.user.signin(payload.user, payload.hash);
+                            var data = await self.user.signin(payload.user, payload.hash);
 
-                            if(keychain)
-                                connection.sendMessage({status: 'success', keychain: keychain});
+                            if(data)
+                                connection.sendMessage({status: 'success', keychain: data.keychain, account: data.account});
                             else
                                 connection.sendMessage({error: 'signin-failed'});
                         }

@@ -4,6 +4,10 @@ const sha256 = require('../crypto/sha256.js');
 const bit = require('./bit.js')
 
 module.exports = {
+    first: function()
+    {
+        return sha256({left: null, right: null});
+    },
     add: function(response)
     {
         response.payload.label = sha256({key: response.payload.key, content: response.payload.content});
@@ -18,7 +22,10 @@ module.exports = {
 
             if(!depth)
                 if(node.label != response.root.before)
+                {
+                    console.log('ERROR A');
                     return false;
+                }
 
             if(depth > 0 && !collision)
             {
@@ -27,7 +34,10 @@ module.exports = {
                 var parent = response.proof[cursor.divide(2).toString(16)];
 
                 if(parent.label != sha256({left: left.label, right: right.label}))
+                {
+                    console.log('ERROR B');
                     return false;
+                }
             }
 
             if('key' in node)
@@ -37,10 +47,16 @@ module.exports = {
                     collision = true;
 
                     if(node.key == response.payload.key)
+                    {
+                        console.log('ERROR C');
                         return false;
+                    }
 
                     if(node.label != sha256({key: node.key, content: node.content}))
+                    {
+                        console.log('ERROR D');
                         return false;
+                    }
                 }
 
                 response.proof[cursor.toString(16)] = {label: null};
@@ -73,8 +89,13 @@ module.exports = {
             cursor = cursor.divide(2);
         }
 
+        console.log(response.proof[bigint.one.toString(16)].label, 'should be equal to', response.root.after);
+
         if(response.proof[bigint.one.toString(16)].label != response.root.after)
+        {
+            console.log('ERROR E');
             return false;
+        }
 
         return true;
     },

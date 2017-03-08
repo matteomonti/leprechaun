@@ -9,6 +9,7 @@ var main = async function()
 {
     await myserver.setup();
     console.log('Setup completed');
+    console.log('Server running');
 };
 
 main();

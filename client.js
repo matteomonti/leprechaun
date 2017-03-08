@@ -1,4 +1,7 @@
-/*const client = require('./client/client.js');
+const path = require('path');
+
+const client = require('./client/client.js');
+const verifier = require('./dictionary/verifier.js');
 
 function makeid()
 {
@@ -23,36 +26,22 @@ var main = async function()
 {
     try
     {
-        client.listen('monti', 'mysolidpass');
+        var myclient = await client.signup('monti', 'mysolidpass');
+        console.log('Signup successful.');
+
+        //var myclient = new client.client();
+        //B myclient.listen();
 
         while(true)
         {
-            await client.signup(makeid(), makeid());
-            console.log('Signup successful.');
+            await sleep(10000);
+            await client.signup(makeid(), makeid(), {path: path.resolve(__dirname, 'data', 'fake.db')});
         }
     }
     catch(error)
     {
         console.log('Error:', error);
     }
-};
-
-main();
-*/
-
-const path = require('path');
-const database = require('./database/client.js');
-var dbpath = path.join(__dirname, 'data', 'client.db');
-
-var main = async function()
-{
-    var mydb = new database(dbpath);
-    await mydb.setup();
-    console.log('Setup completed.');
-
-    console.log(await mydb.version.get());
-    await mydb.version.set(143);
-    console.log(await mydb.version.get());
 };
 
 main();
