@@ -26,15 +26,16 @@ var main = async function()
 {
     try
     {
-        var myclient = await client.signup('monti', 'mysolidpass');
-        console.log('Signup successful.');
+        //var myclient = await client.signup('monti', 'mysolidpass');
+        //console.log('Signup successful.');
 
-        //var myclient = new client.client();
-        //B myclient.listen();
+        var myclient = new client.client();
+        myclient.listen();
 
+        await sleep(10000);
         while(true)
         {
-            await sleep(100);
+            await sleep(1000);
             await client.signup(makeid(), makeid(), {path: path.resolve(__dirname, 'data', 'fake.db')});
         }
     }

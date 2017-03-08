@@ -39,13 +39,6 @@ module.exports = function(path, port)
                 return null;
 
             var response = await accounts.add('users/' + user, {public: public, balance: bigint.zero.toString()});
-            if(!verifier.add(response))
-            {
-                console.log('Something went awfully wrong.');
-                process.exit();
-            }
-            else
-                console.log('Successfully added item to dictionary.');
 
             await tables.keychain.add(user, keychain);
             var account = await accounts.get('users/' + user);
