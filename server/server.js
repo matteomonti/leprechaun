@@ -83,6 +83,7 @@ module.exports = function(path, port)
             {
                 (async function()
                 {
+                    console.log('Dispatching updates up to ', version.toString(), 'to', id);
                     var subscriber = updates.subscribers[id];
 
                     while(subscriber.updates.version.lt(version))
@@ -101,7 +102,7 @@ module.exports = function(path, port)
             }
             else
             {
-                for(var id in updates.subsribers)
+                for(var id in updates.subscribers)
                     updates.dispatch(version, id);
             }
         }
@@ -118,7 +119,7 @@ module.exports = function(path, port)
             try
             {
                 if('updates' in connection)
-                    delete updates.subscibers[connection.updates.id];
+                    delete updates.subscribers[connection.updates.id];
 
                 connection.destroy();
             }
