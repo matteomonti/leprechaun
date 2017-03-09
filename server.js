@@ -7,8 +7,8 @@ var myserver = new server(dbpath, 7777);
 
 var main = async function()
 {
-    await myserver.setup();
-    console.log('Setup completed');
+    //await myserver.setup();
+    //console.log('Setup completed');
     console.log('Server running');
 };
 

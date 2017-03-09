@@ -51,14 +51,14 @@ module.exports = {
                 await load();
 
                 var request = {command: {domain: 'updates', command: 'stream'}, payload: {user: user, hash: cipher.hash(), version: version.toString()}};
-                console.log(request);
+                //console.log(request);
                 connection.send(request);
 
                 var response = await connection.receive();
                 if(!('status' in response) || response.status != 'success')
                     throw response.error; // Should auto-reconnect
 
-                console.log('Listening for updates');
+                //console.log('Listening for updates');
 
                 var handlers =
                 {
@@ -216,6 +216,34 @@ module.exports = {
 
                 last = response.last;
                 db.last.set(last);
+            });
+        };
+
+        self.balance = function()
+        {
+            return transaction(endpoint, async function(connection)
+            {
+                await load();
+
+                var request = {command: {domain: 'user', command: 'get'}, payload: {user: user}};
+                connection.send(request);
+                var response = await connection.receive();
+
+                if('error' in response)
+                    throw response.error;
+
+                if('status' in response && response.status == 'success')
+                {
+                    if(!(verifier.get(response.account)))
+                        throw "Security compromised.";
+
+                    if(response.account.payload.key != sha256('users/' + user))
+                        throw 'Security compromised.';
+
+                    return bigint(response.account.payload.content.balance).add(version).minus(bigint(response.account.payload.content.last));
+                }
+                else
+                    throw 'Unknown error';
             });
         };
 

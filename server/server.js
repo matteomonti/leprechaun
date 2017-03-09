@@ -70,6 +70,15 @@ module.exports = function(path, port)
                 return null;
 
             return {keychain: keychain, account: account};
+        },
+        get: async function(user)
+        {
+            var account = await accounts.get('users/' + user);
+
+            if(!account)
+                return null;
+
+            return account;
         }
     };
 
@@ -229,6 +238,9 @@ module.exports = function(path, port)
                     signin: {
                         user: joi.string().alphanum().min(3).max(30).required(),
                         hash: joi.string().length(64).hex().required()
+                    },
+                    get:{
+                        user: joi.string().alphanum().min(3).max(30).required()
                     }
                 },
                 updates: {
@@ -283,6 +295,22 @@ module.exports = function(path, port)
                         {
                             connection.sendMessage({error: 'unknown-error'});
                         }
+                    },
+                    get: async function(payload)
+                    {
+                        try
+                        {
+                            var account = await self.user.get(payload.user);
+
+                            if(account)
+                                connection.sendMessage({status: 'success', account: account});
+                            else
+                                connection.sendMessage({error: 'not-found'});
+                        }
+                        catch(error)
+                        {
+                            connection.sendMessage({error: 'unknown-error'});
+                        }
                     }
                 },
                 updates: {
@@ -324,6 +352,7 @@ module.exports = function(path, port)
                         }
                         catch(error)
                         {
+                            console.log(error);
                             connection.sendMessage({error: 'unknown-error'});
                         }
                     }
