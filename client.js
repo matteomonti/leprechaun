@@ -1,18 +1,8 @@
 const path = require('path');
+const bigint = require('big-integer');
 
 const client = require('./client/client.js');
 const verifier = require('./dictionary/verifier.js');
-
-function makeid()
-{
-    var text = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    for( var i=0; i < 5; i++ )
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-}
 
 var sleep = function(milliseconds)
 {
@@ -26,18 +16,39 @@ var main = async function()
 {
     try
     {
-        //var myclient = await client.signup('monti', 'mysolidpass');
-        //console.log('Signup successful.');
+        var verifier = await client.signup('verifier', 'itssolidpass', {path: path.resolve(__dirname, 'data', 'verifier.db')});
+        console.log('Verifier signup successful.');
 
-        var myclient = new client.client();
-        myclient.listen();
+        verifier.listen();
+        console.log('Verifier listening.');
 
-        await sleep(10000);
+        var monsino = await client.signup('monsino', 'mysolidpass');
+        console.log('Signup successful.');
+
+        var pippozzi = await client.signup('pippozzi', 'hersolidpass', {path: path.resolve(__dirname, 'data', 'pi.db')});
+        console.log('Recipient signup successful.');
+
+        var n = 0;
+        var accounts = [monsino, pippozzi, verifier];
+        var names = ['monsino', 'pippozzi', 'verifier'];
+
         while(true)
         {
-            await sleep(1000);
-            await client.signup(makeid(), makeid(), {path: path.resolve(__dirname, 'data', 'fake.db')});
+            console.log('Transaction', n);
+            n++;
+
+            var idx = Math.floor(Math.random() * accounts.length);
+            var idy = (idx + 1 + Math.floor(Math.random() * 2)) % accounts.length;
+
+            var sender = accounts[idx];
+            var recipient = names[idy];
+
+            console.log(n.toString() + ":", names[idx], '->', names[idy]);
+            await sender.send(recipient, bigint.one);
         }
+
+        // await monsino.send('verifier', bigint(1));
+        // await pippozzi.send('monsino', bigint(5));
     }
     catch(error)
     {

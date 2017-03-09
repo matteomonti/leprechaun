@@ -24,8 +24,8 @@ module.exports = function(path)
     {
         await db.begin();
         await db.prun('drop table if exists globals;');
-        await db.prun('create table globals(user text, password text, public text, private text, root text, version text);');
-        await db.prun('insert into globals values(\'\', \'\', \'\', \'\', \'\', \'0\')');
+        await db.prun('create table globals(user text, password text, public text, private text, root text, version text, last text);');
+        await db.prun('insert into globals values(\'\', \'\', \'\', \'\', \'\', \'0\', \'0\')');
         await db.prun('drop table if exists proof;');
         await db.prun('create table proof(id char(64) primary key, payload text);');
         await db.commit();
@@ -235,6 +235,40 @@ module.exports = function(path)
         }
     };
 
+    self.last = {
+        get: function()
+        {
+            prepare();
+            return new Promise(function(resolve, reject)
+            {
+                queries.last.get.get(function(error, row)
+                {
+                    if(error)
+                        reject(error);
+                    else
+                    {
+                        queries.last.get.reset();
+                        resolve(bigint(row.last));
+                    }
+                });
+            });
+        },
+        set: function(last)
+        {
+            prepare();
+            return new Promise(function(resolve, reject)
+            {
+                queries.last.set.run(last.toString(), function(error)
+                {
+                    if(error)
+                        reject(error);
+                    else
+                        resolve();
+                });
+            });
+        }
+    };
+
     self.proof = {
         get: function(id)
         {
@@ -338,6 +372,11 @@ module.exports = function(path)
                 {
                     get: db.prepare('select version from globals;'),
                     set: db.prepare('update globals set version = ?;')
+                },
+                last:
+                {
+                    get: db.prepare('select last from globals;'),
+                    set: db.prepare('update globals set last = ?;')
                 },
                 proof:
                 {

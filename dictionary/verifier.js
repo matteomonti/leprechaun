@@ -188,6 +188,8 @@ module.exports = {
     },
     update: function(response)
     {
+        var before;
+
         var depth = 0;
         var cursor = bigint.one;
 
@@ -220,6 +222,7 @@ module.exports = {
                 if(node.key != response.payload.key)
                     return false;
 
+                before = response.proof[cursor.toString(16)];
                 response.proof[cursor.toString(16)] = response.payload;
                 cursor = cursor.divide(2);
                 break;
@@ -242,6 +245,6 @@ module.exports = {
         if(response.proof[bigint.one.toString(16)].label != response.root.after)
             return false;
 
-        return true;
+        return {before: before, after: response.payload};
     }
 }

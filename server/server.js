@@ -2,7 +2,9 @@ const bigint = require('big-integer');
 const net = require('net');
 const jsocket = require('json-socket');
 const joi = require('joi');
+const ursa = require('ursa');
 
+const sha256 = require('../crypto/sha256.js')
 const database = require('../database/database.js');
 const server_database = require('../database/server.js');
 const dictionary = require('../dictionary/dictionary.js');
@@ -38,7 +40,8 @@ module.exports = function(path, port)
             if(await tables.keychain.get(user))
                 return null;
 
-            var response = await accounts.add('users/' + user, {public: public, balance: bigint.zero.toString()});
+            var version = await tables.version.get();
+            var response = await accounts.add('users/' + user, {public: public, balance: bigint.zero.toString(), last: version.toString()});
 
             await tables.keychain.add(user, keychain);
             var account = await accounts.get('users/' + user);
@@ -70,7 +73,75 @@ module.exports = function(path, port)
         }
     };
 
+    self.transaction = {
+        send: async function(user, hash, recipient, amount, signature)
+        {
+            await db.begin();
+
+            var keychain = await tables.keychain.get(user);
+            var user_account = await accounts.get('users/' + user);
+
+            if(!keychain)
+                return null;
+
+            if(keychain.hash != hash)
+                return null;
+
+            var version = await tables.version.get();
+            var balance = mine(version, user_account.payload.content);
+
+            if(balance.lt(amount))
+                return null;
+
+            var last = user_account.payload.content.last;
+            var public = user_account.payload.content.public;
+
+            var body = {command: {domain: 'transaction', command: 'send'}, payload: {recipient: recipient, last: last, amount: amount}};
+            if(!verify(public, body, signature))
+                return null;
+
+            var recipient_account = await accounts.get('users/' + recipient);
+
+            user_account.payload.content.last = version.toString();
+            user_account.payload.content.balance = balance.minus(amount).toString();
+            recipient_account.payload.content.balance = bigint(recipient_account.payload.content.balance).plus(amount).toString();
+
+            var send = await accounts.update('users/' + user, user_account.payload.content);
+            var receive = await accounts.update('users/' + recipient, recipient_account.payload.content);
+
+            var update = {command: {domain: 'transaction', command: 'send'}, log: {recipient: recipient, amount: amount, send: send, receive: receive, signature: signature}};
+
+            await tables.update.add(version, update);
+            await tables.version.set(version.add(1));
+
+            await db.commit();
+
+            updates.dispatch();
+
+            return version.toString();
+        }
+    }
+
     // Private methods
+
+    var mine = function(version, account)
+    {
+        return bigint(account.balance).add(version).minus(bigint(account.last));
+    };
+
+    var verify = function(pubkey, message, signature)
+    {
+        try
+        {
+            var rsa = ursa.createPublicKey(pubkey);
+            var digest = sha256(message);
+            return rsa.publicDecrypt(signature, 'hex', 'hex') == digest;
+        }
+        catch(error)
+        {
+            return false;
+        }
+    };
 
     var updates = {
         cursor: 0,
@@ -152,8 +223,8 @@ module.exports = function(path, port)
                                 secret: joi.string().min(3300).max(3500).hex().required(),
                                 iv: joi.string().length(24).hex().required(),
                                 tag: joi.string().length(32).hex().required()
-                            })
-                        })
+                            }).required()
+                        }).required()
                     },
                     signin: {
                         user: joi.string().alphanum().min(3).max(30).required(),
@@ -164,9 +235,19 @@ module.exports = function(path, port)
                     stream: {
                         user: joi.string().alphanum().min(3).max(30).required(),
                         hash: joi.string().length(64).hex().required(),
-                        version: joi.string().regex(/^\d{1,15}$/)
+                        version: joi.string().regex(/^\d{1,15}$/).required()
+                    }
+                },
+                transaction: {
+                    send: {
+                        user: joi.string().alphanum().min(3).max(30).required(),
+                        hash: joi.string().length(64).hex().required(),
+                        recipient: joi.string().alphanum().min(3).max(30).required(),
+                        amount: joi.string().regex(/^\d{1,15}$/).required(),
+                        signature: joi.string().min(450).max(550).required()
                     }
                 }
+
             };
 
             var handlers = {
@@ -223,6 +304,23 @@ module.exports = function(path, port)
                             }
                             else
                                 connection.sendMessage({error: 'signin-failed'});
+                        }
+                        catch(error)
+                        {
+                            connection.sendMessage({error: 'unknown-error'});
+                        }
+                    }
+                },
+                transaction: {
+                    send: async function(payload)
+                    {
+                        try
+                        {
+                            var last = await self.transaction.send(payload.user, payload.hash, payload.recipient, payload.amount, payload.signature)
+                            if(last)
+                                connection.sendMessage({status: 'success', last: last});
+                            else
+                                connection.sendMessage({error: 'transaction-invalid'});
                         }
                         catch(error)
                         {

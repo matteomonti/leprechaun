@@ -38,7 +38,7 @@ module.exports = function(database)
                     else
                     {
                         queries.version.get.reset();
-                        resolve(new bigint(row.version));
+                        resolve(bigint(row.version));
                     }
                 });
             });
