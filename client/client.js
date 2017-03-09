@@ -10,7 +10,7 @@ const transaction = require('../network/transaction.js');
 const database = require('../database/client.js');
 const verifier = require('../dictionary/verifier.js');
 
-const endpoint = {host: '127.0.0.1', port: 7777};
+const endpoint = {host: 'rain.vg', port: 7777};
 const defaults = {path: path.join(__dirname, '..', 'data', 'client.db')}
 
 module.exports = {
